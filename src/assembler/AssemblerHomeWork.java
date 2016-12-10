@@ -105,7 +105,7 @@ public class AssemblerHomeWork {
 					readOpcodeTable();
 					readFileByParse1(filePath);
 					readFileByParse2(filePath);
-					printObjectCode();
+					printResult();
 				} else {
 					System.out.println("No Selection ");
 				}
@@ -117,7 +117,7 @@ public class AssemblerHomeWork {
 		frame.getContentPane().add(selectFileButton, gbc_selectFileButton);
 	}
 	
-	private void printObjectCode() {
+	private void printResult() {
 		for (int i = 0; i < sourceTable.size(); i++) {
 			String loc = locTable.get(i);
 			String statement = sourceTable.get(i);
@@ -260,8 +260,10 @@ public class AssemblerHomeWork {
 		}
 	}
 
+	/*
+	 * 16進位相加
+	 * */
 	private String addHex(String hex1, int int1) {
-//		String loc = Integer.toHexString(Integer.parseInt(hex1, 16) + int1);
 		return Integer.toHexString(Integer.parseInt(hex1, 16) + int1);
 	}
 
@@ -300,8 +302,10 @@ public class AssemblerHomeWork {
 							objectCode = content[1];
 						}
 					} else if (opcode.equals("WORD")) {
-//						String address = Integer.toHexString(Integer.valueOf(statement));
 						objectCode = Integer.toHexString(Integer.valueOf(statement));
+					}
+					if (objectCode.length() > 0 && objectCode.length() < 6) {
+						objectCode = addZeroForNum(objectCode, 6);
 					}
 					objectCodeTable.add(objectCode);
 				}
@@ -314,7 +318,10 @@ public class AssemblerHomeWork {
 		}
 	}
 	
-	private static String capitalize(String s) {
+	/*
+	 * 把字串轉成AscII Code
+	 * */
+	private String capitalize(String s) {
         char[] charArray = s.toCharArray();
         String result = "";
         for(char c : charArray) {
@@ -323,5 +330,23 @@ public class AssemblerHomeWork {
         }
         return result.toUpperCase();
     }
+	
+	/*
+	 * 把字串補0
+	 * */
+	private String addZeroForNum(String str, int strLength) {
+	    int strLen = str.length();
+	    if (strLen < strLength) {
+	        while (strLen < strLength) {
+	            StringBuffer sb = new StringBuffer();
+	            sb.append("0").append(str);// 左補0
+	            // sb.append(str).append("0");//右補0
+	            str = sb.toString();
+	            strLen = str.length();
+	        }
+	    }
+
+	    return str;
+	}
 
 }
