@@ -33,8 +33,10 @@ public class AssemblerHomeWork {
 	ArrayList<String> locTable = new ArrayList<String>();
 	ArrayList<String> sourceTable = new ArrayList<String>();
 	ArrayList<String> objectCodeTable = new ArrayList<String>();
-	ArrayList<String> assemblerTable = new ArrayList<String>();
+	String objectProgram = "";
 	String symTableAddress = "0";
+	int textRecordMaxLength = 60;	//去掉T，記憶體位置，記憶體長度後的長度
+	int firstRESIndex = -1;	//記憶因為RESW或RESB斷行時的Loc位置
 
 	/**
 	 * Launch the application.
@@ -105,6 +107,7 @@ public class AssemblerHomeWork {
 					readOpcodeTable();
 					readFileByParse1(filePath);
 					readFileByParse2(filePath);
+					generateObjectProgram();
 					printResult();
 				} else {
 					System.out.println("No Selection ");
@@ -117,15 +120,26 @@ public class AssemblerHomeWork {
 		frame.getContentPane().add(selectFileButton, gbc_selectFileButton);
 	}
 	
+	/**
+	 * 印出結果
+	 * @return
+	 */
 	private void printResult() {
+		System.out.println("====================\n");
 		for (int i = 0; i < sourceTable.size(); i++) {
 			String loc = locTable.get(i);
 			String statement = sourceTable.get(i);
 			String objectCode = objectCodeTable.get(i);
 			System.out.println(loc.toUpperCase() + "  " + statement.replace(",", "  ") + "  " + objectCode.toUpperCase());	
 		}
+		System.out.println("====================\n");
+		System.out.println(objectProgram);
 	}
 
+	/**
+	 * 讀取OpCode Table
+	 * @return
+	 */
 	private void readOpcodeTable() {
 		String filePath = "/Users/Willy/Documents/workspace/AssemblerHomeWork/opcode table.txt";
 		BufferedReader reader = null;
@@ -149,6 +163,10 @@ public class AssemblerHomeWork {
 		}
 	}
 
+	/**
+	 * 產生symTable
+	 * @return
+	 */
 	private void readFileByParse1(String filePath) {
 		BufferedReader reader = null;
 		try {
@@ -158,7 +176,6 @@ public class AssemblerHomeWork {
 				sourceTable.add(str);
 				parse1(str);
 			}
-			locTable.add(symTableAddress);//加上最後一筆的loc address
 			System.out.println("parse1 finished");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -173,6 +190,10 @@ public class AssemblerHomeWork {
 		}
 	}
 
+	/**
+	 * 產生objectCodeTable
+	 * @return
+	 */
 	private void readFileByParse2(String filePath) {
 		BufferedReader reader = null;
 		try {
@@ -181,7 +202,6 @@ public class AssemblerHomeWork {
 			while ((str = reader.readLine()) != null) {
 				parse2(str);
 			}
-			objectCodeTable.add("");//加上最後一筆的object code
 			System.out.println("parse2 finished");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -259,21 +279,11 @@ public class AssemblerHomeWork {
 			}
 		}
 	}
-
-	/*
-	 * 16進位相加
-	 * */
-	private String addHex(String hex1, int int1) {
-		return Integer.toHexString(Integer.parseInt(hex1, 16) + int1);
-	}
-
+	
 	private void parse2(String str) {
 		String[] instruction = str.split(",");
 
 		if (instruction[1].equals("START")) {
-			// String content = instruction[2];
-			// String allString = content + "," + str;
-			// assemblerTable.add(allString);
 			objectCodeTable.add("");//第一筆的object code為空
 		} else {
 			String opcode = instruction[1];
@@ -318,9 +328,100 @@ public class AssemblerHomeWork {
 		}
 	}
 	
-	/*
+	/**
+	 * 產生ObjectProgram
+	 * @return 
+	 */
+	private void generateObjectProgram() {
+		String totalOP = "";
+		String op = "";
+		int textFirstLoc = 0;
+		boolean findNext = false;
+		for (int i = 0; i < sourceTable.size(); i++) {
+			String[] instruction = sourceTable.get(i).split(",");
+			findNext = isNextRESWorRESB(i);
+			if (instruction[1].equals("START")) {
+				//算記憶體長度
+				String firstLoc = locTable.get(i);
+				String lastLoc = locTable.get(sourceTable.size() -1);
+				//串上objectProgram字串
+				String startOjectProgram = "H" + instruction[0] + addZeroForNum(locTable.get(i), 6) + addZeroForNum(subHex(firstLoc, lastLoc), 6);
+				objectProgram += startOjectProgram + "\n";
+			} else if (instruction[1].equals("END")) {
+				//串上END之前的字串
+				String firstLoc = locTable.get(textFirstLoc);
+				String lastLoc = locTable.get(i);
+				String locLength = addZeroForNum(subHex(firstLoc, lastLoc), 2);
+				totalOP += locLength + op;
+				objectProgram += totalOP + "\n";
+				totalOP = "";
+				op = "";
+				//串上objectProgram字串
+				String endOjectProgram = "E" + addZeroForNum(locTable.get(0), 6);
+				objectProgram += endOjectProgram + "\n";
+			} else {
+				if (op.length() == 0) {
+					totalOP = "T" + addZeroForNum(locTable.get(i), 6);
+					textFirstLoc = i;
+				}
+				if ((instruction[1].equals("RESW") || instruction[1].equals("RESB")) && !findNext) {
+					String firstLoc = locTable.get(textFirstLoc);
+					String lastLoc = locTable.get(firstRESIndex);
+					String locLength = addZeroForNum(subHex(firstLoc, lastLoc), 2);
+					totalOP += locLength + op;
+					objectProgram += totalOP + "\n";
+					totalOP = "";
+					op = "";
+				} else if (op.length() >= textRecordMaxLength) {
+					String firstLoc = locTable.get(textFirstLoc);
+					String lastLoc = locTable.get(i);
+					String locLength = addZeroForNum(subHex(firstLoc, lastLoc), 2);
+					totalOP += locLength + op;
+					objectProgram += totalOP + "\n";
+					totalOP = "";
+					op = "";
+					i--;
+				} else if (op.length() + objectCodeTable.get(i).length() > textRecordMaxLength) {
+					String firstLoc = locTable.get(textFirstLoc);
+					String lastLoc = locTable.get(i);
+					String locLength = addZeroForNum(subHex(firstLoc, lastLoc), 2);
+					totalOP += locLength + op;
+					objectProgram += totalOP + "\n";
+					totalOP = "";
+					op = "";
+					i--;
+				} else {
+					op += objectCodeTable.get(i);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 16進位相加
+	 * @param hex1
+	 * @param int1
+	 * @return
+	 */
+	private String addHex(String hex1, int int1) {
+		return Integer.toHexString(Integer.parseInt(hex1, 16) + int1).toUpperCase();
+	}
+	
+	/**
+	 * 16進位相減
+	 * @param hex1
+	 * @param hex2
+	 * @return
+	 */
+	private String subHex(String hex1, String hex2) {
+		return Integer.toHexString(Integer.parseInt(hex2, 16) - Integer.parseInt(hex1, 16)).toUpperCase();
+	}
+
+	/**
 	 * 把字串轉成AscII Code
-	 * */
+	 * @param s
+	 * @return
+	 */
 	private String capitalize(String s) {
         char[] charArray = s.toCharArray();
         String result = "";
@@ -331,9 +432,12 @@ public class AssemblerHomeWork {
         return result.toUpperCase();
     }
 	
-	/*
+	/**
 	 * 把字串補0
-	 * */
+	 * @param str
+	 * @param strLength
+	 * @return
+	 */
 	private String addZeroForNum(String str, int strLength) {
 	    int strLen = str.length();
 	    if (strLen < strLength) {
@@ -345,8 +449,25 @@ public class AssemblerHomeWork {
 	            strLen = str.length();
 	        }
 	    }
-
 	    return str;
 	}
-
+	
+	/**
+	 * 是否連續兩個都是RESW or RESB
+	 * @param i
+	 * @return
+	 */
+	private boolean isNextRESWorRESB(int i) {
+		if (i + 1 >= sourceTable.size()) {
+			return false;
+		}
+		String[] instruction = sourceTable.get(i).split(",");
+		String[] nextInstruction = sourceTable.get(i + 1).split(",");
+		boolean first = instruction[1].equals("RESW") || instruction[1].equals("RESB");
+		boolean next = nextInstruction[1].equals("RESW") || nextInstruction[1].equals("RESB");
+		if (!first && next) {
+			firstRESIndex = i + 1;
+		}
+		return first && next;
+	}
 }
