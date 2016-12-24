@@ -20,6 +20,8 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
+import javax.swing.JTextArea;
+import java.awt.Font;
 
 public class AssemblerHomeWork {
 
@@ -37,6 +39,7 @@ public class AssemblerHomeWork {
 	String symTableAddress = "0";
 	int textRecordMaxLength = 60;	//去掉T，記憶體位置，記憶體長度後的長度
 	int firstRESIndex = -1;	//記憶因為RESW或RESB斷行時的Loc位置
+	private JTextArea resultTextArea;
 
 	/**
 	 * Launch the application.
@@ -70,15 +73,15 @@ public class AssemblerHomeWork {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0, 0, 0, 0, 0 };
-		gridBagLayout.rowHeights = new int[] { 0, 0 };
+		gridBagLayout.rowHeights = new int[] { 0, 0, 0 };
 		gridBagLayout.columnWeights = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, Double.MIN_VALUE };
-		gridBagLayout.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
+		gridBagLayout.rowWeights = new double[] { 0.0, 1.0, Double.MIN_VALUE };
 		frame.getContentPane().setLayout(gridBagLayout);
 
 		JLabel lblNewLabel = new JLabel(" File Path");
 		GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
 		gbc_lblNewLabel.gridwidth = 3;
-		gbc_lblNewLabel.insets = new Insets(0, 0, 0, 5);
+		gbc_lblNewLabel.insets = new Insets(0, 0, 5, 5);
 		gbc_lblNewLabel.anchor = GridBagConstraints.EAST;
 		gbc_lblNewLabel.gridx = 0;
 		gbc_lblNewLabel.gridy = 0;
@@ -86,7 +89,7 @@ public class AssemblerHomeWork {
 
 		filePathTextField = new JTextField();
 		GridBagConstraints gbc_filePathTextField = new GridBagConstraints();
-		gbc_filePathTextField.insets = new Insets(0, 0, 0, 5);
+		gbc_filePathTextField.insets = new Insets(0, 0, 5, 5);
 		gbc_filePathTextField.fill = GridBagConstraints.HORIZONTAL;
 		gbc_filePathTextField.gridx = 3;
 		gbc_filePathTextField.gridy = 0;
@@ -115,9 +118,21 @@ public class AssemblerHomeWork {
 			}
 		});
 		GridBagConstraints gbc_selectFileButton = new GridBagConstraints();
+		gbc_selectFileButton.insets = new Insets(0, 0, 5, 0);
 		gbc_selectFileButton.gridx = 4;
 		gbc_selectFileButton.gridy = 0;
 		frame.getContentPane().add(selectFileButton, gbc_selectFileButton);
+		
+		resultTextArea = new JTextArea();
+		resultTextArea.setFont(new Font("Lucida Grande", Font.PLAIN, 8));
+		resultTextArea.setLineWrap(true);
+		resultTextArea.setEditable(false);
+		GridBagConstraints gbc_resultTextArea = new GridBagConstraints();
+		gbc_resultTextArea.insets = new Insets(0, 0, 0, 5);
+		gbc_resultTextArea.fill = GridBagConstraints.BOTH;
+		gbc_resultTextArea.gridx = 3;
+		gbc_resultTextArea.gridy = 1;
+		frame.getContentPane().add(resultTextArea, gbc_resultTextArea);
 	}
 	
 	/**
@@ -125,15 +140,21 @@ public class AssemblerHomeWork {
 	 * @return
 	 */
 	private void printResult() {
+		String printCode = "====================\n";
 		System.out.println("====================\n");
 		for (int i = 0; i < sourceTable.size(); i++) {
 			String loc = locTable.get(i);
 			String statement = sourceTable.get(i);
 			String objectCode = objectCodeTable.get(i);
+			printCode += loc.toUpperCase() + "  " + statement.replace(",", "  ") + "  " + objectCode.toUpperCase() + "\n";
 			System.out.println(loc.toUpperCase() + "  " + statement.replace(",", "  ") + "  " + objectCode.toUpperCase());	
 		}
+		printCode += "====================\n";
+		printCode += objectProgram;
 		System.out.println("====================\n");
 		System.out.println(objectProgram);
+		
+		resultTextArea.setText(printCode);
 	}
 
 	/**
