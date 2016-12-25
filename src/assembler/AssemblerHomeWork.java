@@ -1,6 +1,7 @@
 package assembler;
 
 import java.awt.EventQueue;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -19,9 +20,9 @@ import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JTextField;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import java.awt.Font;
+import javax.swing.JTextField;
 
 public class AssemblerHomeWork {
 
@@ -29,6 +30,8 @@ public class AssemblerHomeWork {
 	private JTextField filePathTextField;
 	private JButton selectFileButton;
 	protected JFileChooser chooser;
+	private JTextArea resultTextArea;
+	private JScrollPane scroller;
 
 	Map<String, String> symbolTable = new HashMap<String, String>();
 	Map<String, String> opcodeTable = new HashMap<String, String>();
@@ -39,7 +42,6 @@ public class AssemblerHomeWork {
 	String symTableAddress = "0";
 	int textRecordMaxLength = 60;	//去掉T，記憶體位置，記憶體長度後的長度
 	int firstRESIndex = -1;	//記憶因為RESW或RESB斷行時的Loc位置
-	private JTextArea resultTextArea;
 
 	/**
 	 * Launch the application.
@@ -69,7 +71,7 @@ public class AssemblerHomeWork {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 300);
+		frame.setBounds(100, 100, 600, 500);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 0, 0, 0, 0, 0 };
@@ -124,15 +126,21 @@ public class AssemblerHomeWork {
 		frame.getContentPane().add(selectFileButton, gbc_selectFileButton);
 		
 		resultTextArea = new JTextArea();
-		resultTextArea.setFont(new Font("Lucida Grande", Font.PLAIN, 8));
+		scroller = new JScrollPane(resultTextArea,
+		        JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+		        JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);// Add your text area to scroll pane 
+		resultTextArea.setFont(new Font("Monaco", Font.PLAIN, 13));
 		resultTextArea.setLineWrap(true);
 		resultTextArea.setEditable(false);
+		
 		GridBagConstraints gbc_resultTextArea = new GridBagConstraints();
+		gbc_resultTextArea.gridwidth = 5;
 		gbc_resultTextArea.insets = new Insets(0, 0, 0, 5);
 		gbc_resultTextArea.fill = GridBagConstraints.BOTH;
-		gbc_resultTextArea.gridx = 3;
+		gbc_resultTextArea.gridx = 0;
 		gbc_resultTextArea.gridy = 1;
-		frame.getContentPane().add(resultTextArea, gbc_resultTextArea);
+		
+		frame.getContentPane().add(scroller, gbc_resultTextArea);
 	}
 	
 	/**
@@ -140,20 +148,28 @@ public class AssemblerHomeWork {
 	 * @return
 	 */
 	private void printResult() {
-		String printCode = "====================\n";
+		String printCode = "=== Assembler Language Program ===\n";
 		System.out.println("====================\n");
 		for (int i = 0; i < sourceTable.size(); i++) {
 			String loc = locTable.get(i);
 			String statement = sourceTable.get(i);
 			String objectCode = objectCodeTable.get(i);
-			printCode += loc.toUpperCase() + "  " + statement.replace(",", "  ") + "  " + objectCode.toUpperCase() + "\n";
-			System.out.println(loc.toUpperCase() + "  " + statement.replace(",", "  ") + "  " + objectCode.toUpperCase());	
+			//把文字排整齊
+			String statementString = "";
+			for(String str: statement.split("@")) {
+				statementString += addStringForSpace(str, 8);
+			}
+			if(statement.split("@").length < 3) {
+				statementString += addStringForSpace(" ", 8);
+			}
+			//把要顯示的字串串起來
+			printCode += loc.toUpperCase() + "  " + statementString + "  " + objectCode.toUpperCase() + "\n";
+			System.out.println(loc.toUpperCase() + "  " + statement.replace("@", "  ") + "  " + objectCode.toUpperCase());	
 		}
-		printCode += "====================\n";
+		printCode += "\n========= Object Program =========\n";
 		printCode += objectProgram;
 		System.out.println("====================\n");
 		System.out.println(objectProgram);
-		
 		resultTextArea.setText(printCode);
 	}
 
@@ -238,7 +254,7 @@ public class AssemblerHomeWork {
 	}
 
 	private void parse1(String str) {
-		String[] instruction = str.split(",");
+		String[] instruction = str.split("@");
 		if (symbolTable.get("START") == null) {
 			if (instruction[1].equals("START")) {
 				symbolTable.put("START", instruction[2]);
@@ -302,7 +318,7 @@ public class AssemblerHomeWork {
 	}
 	
 	private void parse2(String str) {
-		String[] instruction = str.split(",");
+		String[] instruction = str.split("@");
 
 		if (instruction[1].equals("START")) {
 			objectCodeTable.add("");//第一筆的object code為空
@@ -359,7 +375,7 @@ public class AssemblerHomeWork {
 		int textFirstLoc = 0;
 		boolean findNext = false;
 		for (int i = 0; i < sourceTable.size(); i++) {
-			String[] instruction = sourceTable.get(i).split(",");
+			String[] instruction = sourceTable.get(i).split("@");
 			findNext = isNextRESWorRESB(i);
 			if (instruction[1].equals("START")) {
 				//算記憶體長度
@@ -473,6 +489,20 @@ public class AssemblerHomeWork {
 	    return str;
 	}
 	
+	private String addStringForSpace(String str, int strLength) {
+	    int strLen = str.length();
+	    if (strLen < strLength) {
+	        while (strLen < strLength) {
+	            StringBuffer sb = new StringBuffer();
+//	            sb.append(" ").append(str);// 左補0
+	             sb.append(str).append(" ");//右補0
+	            str = sb.toString();
+	            strLen = str.length();
+	        }
+	    }
+	    return str;
+	}
+	
 	/**
 	 * 是否連續兩個都是RESW or RESB
 	 * @param i
@@ -482,8 +512,8 @@ public class AssemblerHomeWork {
 		if (i + 1 >= sourceTable.size()) {
 			return false;
 		}
-		String[] instruction = sourceTable.get(i).split(",");
-		String[] nextInstruction = sourceTable.get(i + 1).split(",");
+		String[] instruction = sourceTable.get(i).split("@");
+		String[] nextInstruction = sourceTable.get(i + 1).split("@");
 		boolean first = instruction[1].equals("RESW") || instruction[1].equals("RESB");
 		boolean next = nextInstruction[1].equals("RESW") || nextInstruction[1].equals("RESB");
 		if (!first && next) {
