@@ -156,15 +156,26 @@ public class AssemblerHomeWork {
 			String objectCode = objectCodeTable.get(i);
 			//把文字排整齊
 			String statementString = "";
-			for(String str: statement.split("@")) {
-				statementString += addStringForSpace(str, 8);
+			//為了要印出BUFFER,X所做的判斷
+			if (statement.split(",").length == 4) {
+				for (int index = 0; index < statement.split(",").length; index++) {
+					if (index == 2) {
+						statementString += statement.split(",")[index] + "," + statement.split(",")[index + 1];
+					} else if (index < 2) {
+						statementString += addStringForSpace(statement.split(",")[index], 8);
+					}
+				}
+			} else {
+				for(String str: statement.split(",")) {
+					statementString += addStringForSpace(str, 8);
+				}
 			}
-			if(statement.split("@").length < 3) {
+			if(statement.split(",").length < 3) {
 				statementString += addStringForSpace(" ", 8);
 			}
 			//把要顯示的字串串起來
 			printCode += loc.toUpperCase() + "  " + statementString + "  " + objectCode.toUpperCase() + "\n";
-			System.out.println(loc.toUpperCase() + "  " + statement.replace("@", "  ") + "  " + objectCode.toUpperCase());	
+			System.out.println(loc.toUpperCase() + "  " + statement.replace(",", "  ") + "  " + objectCode.toUpperCase());	
 		}
 		printCode += "\n========= Object Program =========\n";
 		printCode += objectProgram;
@@ -254,7 +265,7 @@ public class AssemblerHomeWork {
 	}
 
 	private void parse1(String str) {
-		String[] instruction = str.split("@");
+		String[] instruction = str.split(",");
 		if (symbolTable.get("START") == null) {
 			if (instruction[1].equals("START")) {
 				symbolTable.put("START", instruction[2]);
@@ -318,23 +329,22 @@ public class AssemblerHomeWork {
 	}
 	
 	private void parse2(String str) {
-		String[] instruction = str.split("@");
+		String[] instruction = str.split(",");
 
 		if (instruction[1].equals("START")) {
 			objectCodeTable.add("");//第一筆的object code為空
 		} else {
 			String opcode = instruction[1];
-			String statement = instruction.length >= 3 ? instruction[2] : "";
+			String operand = instruction.length >= 3 ? instruction[2] : "";
 			String objectCode = "";
-			
-			if (statement.length() > 0) {
+			if (operand.length() > 0) {
 				if (opcodeTable.get(opcode) != null) {
-					if (symbolTable.get(statement) != null) {
+					if (symbolTable.get(operand) != null) {
 						if (instruction.length == 4 && instruction[3].toLowerCase().equals("x")) {
-							String addresss = addHex(symbolTable.get(statement), 32768);
+							String addresss = addHex(symbolTable.get(operand), 32768);
 							objectCode = opcodeTable.get(opcode) + addresss;
 						} else {
-							objectCode = opcodeTable.get(opcode) + symbolTable.get(statement);
+							objectCode = opcodeTable.get(opcode) + symbolTable.get(operand);
 						}
 					} else {
 						objectCode = opcodeTable.get(opcode) + "0000";
@@ -342,14 +352,14 @@ public class AssemblerHomeWork {
 					objectCodeTable.add(objectCode);
 				} else {
 					if (opcode.equals("BYTE")) {
-						String[] content = statement.split("'");
+						String[] content = operand.split("'");
 						if (content[0].toLowerCase().equals("c")) {
 							objectCode = capitalize(content[1]);
 						} else if (content[0].toLowerCase().equals("x")) {
 							objectCode = content[1];
 						}
 					} else if (opcode.equals("WORD")) {
-						objectCode = Integer.toHexString(Integer.valueOf(statement));
+						objectCode = Integer.toHexString(Integer.valueOf(operand));
 					}
 					if (objectCode.length() > 0 && objectCode.length() < 6) {
 						objectCode = addZeroForNum(objectCode, 6);
@@ -375,7 +385,7 @@ public class AssemblerHomeWork {
 		int textFirstLoc = 0;
 		boolean findNext = false;
 		for (int i = 0; i < sourceTable.size(); i++) {
-			String[] instruction = sourceTable.get(i).split("@");
+			String[] instruction = sourceTable.get(i).split(",");
 			findNext = isNextRESWorRESB(i);
 			if (instruction[1].equals("START")) {
 				//算記憶體長度
@@ -512,8 +522,8 @@ public class AssemblerHomeWork {
 		if (i + 1 >= sourceTable.size()) {
 			return false;
 		}
-		String[] instruction = sourceTable.get(i).split("@");
-		String[] nextInstruction = sourceTable.get(i + 1).split("@");
+		String[] instruction = sourceTable.get(i).split(",");
+		String[] nextInstruction = sourceTable.get(i + 1).split(",");
 		boolean first = instruction[1].equals("RESW") || instruction[1].equals("RESB");
 		boolean next = nextInstruction[1].equals("RESW") || nextInstruction[1].equals("RESB");
 		if (!first && next) {
