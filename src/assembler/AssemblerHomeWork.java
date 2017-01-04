@@ -42,6 +42,7 @@ public class AssemblerHomeWork {
 	String symTableAddress = "0";
 	int textRecordMaxLength = 60;	//去掉T，記憶體位置，記憶體長度後的長度
 	int firstRESIndex = -1;	//記憶因為RESW或RESB斷行時的Loc位置
+	boolean isAddZero = true;	//是否讓BYTE的ObjectCode用0補齊6位數
 
 	/**
 	 * Launch the application.
@@ -361,8 +362,14 @@ public class AssemblerHomeWork {
 					} else if (opcode.equals("WORD")) {
 						objectCode = Integer.toHexString(Integer.valueOf(operand));
 					}
-					if (objectCode.length() > 0 && objectCode.length() < 6) {
-						objectCode = addZeroForNum(objectCode, 6);
+					if(isAddZero) {
+						if (objectCode.length() > 0 && objectCode.length() < 6) {
+							objectCode = addZeroForNum(objectCode, 6);
+						}
+					} else {
+						if (objectCode.length() > 0 && objectCode.length() < 6 && !opcode.equals("BYTE")) {
+							objectCode = addZeroForNum(objectCode, 6);
+						}
 					}
 					objectCodeTable.add(objectCode);
 				}
